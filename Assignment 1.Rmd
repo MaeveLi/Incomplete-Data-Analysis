@@ -1,0 +1,317 @@
+---
+title: |
+  <center> Assignment 1 for Incomplete Data Analysis <center>
+author: "Maeve Li (Minqing Li) s2167017"
+output: 
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+1. (a) The answer is (ii) $0.3$. Because ALQ is MCAR, the probability of its value missing is unrelated to either the specific values that should have been obtained or observed values or unobserved values (i.e. unrelated to the data). Therefore, the probability of ALQ being missing for those with ALQ=Yes should be the same with those with ALQ=No.
+
+(b) The answer is (ii). ALQ being MAR given gender means that the probability that a ALQ value is missing varies with gender but does not depend on ALQ themselves. Within the same gender group (i.e. after adjusting for gender), missing for ALQ should be MCAR  and is independent of the ALQ values.
+
+(c) The answer is (iii). The given MAR assumption implies that the probability that a ALQ value is missing varies with gender. While the probability of ALQ being missing for men is 0.1, there is no certainty as to what the probability of ALQ being missing for women would be. It could be higher or lower, for these two probabilities are not necessarily related.
+
+
+2. The assumption that each variable contains 10% of missing values means that for each variable, there are $100*0.10=10$ entries of data missing, and the whole dataset has $100*0.10*10=100$ entries of data missing in total.  
+
+The largest possible subsample when conducting a complete data analysis occurs when the ten variables all have missing data in the same rows. This means that ten rows' data are completely missing with no presence of data at all while the remaining 90 rows are all complete. This would add up to exactly $10*10=100$ entries of data missing, and result in a subsample of size 90.  
+
+The smallest possible subsample occurs when the ten variables have missing data in completely different rows from each other.  This means that for the whole dataset's 100 rows, each row of data have exactly one variable missing its value, which would also add up to $100*1=100$ entries of data missing. This leaves no complete row of data, resulting in a subsample of size 0 (no available data for complete data analysis).
+
+
+3. (a)We are first asked to simulate a data set of size 500 on $Y_1$ and $Y_2$. The dataset is named data.y.
+```{R}
+n <- 500
+set.seed(1)
+z1 <- rnorm(n,0,1)
+z2 <- rnorm(n,0,1)
+z3 <- rnorm(n,0,1)
+y1 = z1+1
+y2 = 5+2*z1+z2
+data.y <- data.frame(y1,y2)
+head(data.y)
+```
+
+Then, we impose missingness on $Y_2$ with the given instructions. That is, given $a=2$ and $b=0$, $Y_2$ is missing if $a*(Y_1-1)+b*(Y_2-5)+Z_3<0$. The observed dataset is named data.obs and is formulated as follows.
+```{R}
+#impose missingness on Y_2
+a = 2
+b = 0
+y2.obs<- ifelse(a*(y1-1)+b*(y2-5)+z3<0,NA,y2)
+data.obs <- data.frame(y1,y2=y2.obs)
+head(data.obs)
+```
+
+This missing data mechanism is MAR because when $a=2$ and $b=0$, the condition that $Y_2$ is missing can be expressed as $2*(Y_1-1)+Z_3<0$, meaning that the probability of $Y_2$ missing depends on the values of $Y_1$, which is fully observed, and is independent of the values of $Y_2$.  
+
+Finally, we plot the marginal density of $Y_2$ for both complete values and observed values using the plot function.
+```{R}
+y2.obs1 <- y2.obs[which(is.na(y2.obs)==FALSE)]
+plot(density(y2), lwd = 2, col = "blue", xlab = expression(Y[2]),
+     main = "MAR",ylim=c(0,0.25))
+lines(density(y2.obs1), lwd = 2, col = "red")
+legend(-4, 0.25, legend = c("Complete data", "Observed data"),
+       col = c("blue", "red"), lty = c(1,1), lwd = c(2,2), bty ="n")
+```
+From the density graph we can see that the distribution of the complete data and the observed data are quite different.
+
+
+(b) To apply stochastic regression imputation, first we need to build a regression model conditioning on $Y_1$. The regression model we use is as follows
+$$Y_{2}=\beta_{0}+\beta_{1}Y_{1}+\varepsilon,\qquad \varepsilon\sim{N}(0,\sigma^2). $$
+We should fit the regression model to complete cases and obtain estimated regression coefficients $\widehat{\beta}_0$ and  $\widehat{\beta}_1$, and then impute the missing $Y_2$ values based on the fitted regression model and adding a random term which is normally distributed with mean zero and variance equal to the estimated variance of the residuals (i.e.,$z_i\overset{\text{iid}}\sim\text{N}(0,\widehat{\sigma}^2)$).
+```{R}
+#build a regression model
+fity <- lm(y2~y1,data=data.obs)
+summary(fity)
+coef(fity)
+```
+So the fitted model should be $$Y_{2}=2.87039+1.999996*Y_{1}+\varepsilon,\qquad \varepsilon\sim{N}(0,\sigma^2)$$We'll use the fitted values vs residuals plot to check the linearity assumption. If the assumption is met, the points should be randomly distributed and no obvious pattern is shown. We can also use the Q-Q plot to check the assumption of the normality of error.
+```{R}
+#drawing the two analytic graphs
+par(mfrow=c(1,2))
+plot(fity$fitted.values, residuals(fity), main="Fitted vs Residuals", 
+     xlab = "Fitted values", ylab = "Residuals")
+qqnorm(rstandard(fity))
+qqline(rstandard(fity),col="red")
+```
+From the Q-Q plot we can see that all points lie on the 1:1 line with negligible deviation in the tails, therefore the normality assumption appears to be justified in this model. There is no obvious pattern so it is safe to assume that there is a linear relationship and the variance is constant.  
+We now use the predict function to directly compute the predicted values of the missing data in $Y_2$ by passing our fitted regression model. And then we add the random term to complete the stochastic regression imputation.
+```{R}
+#calculating the predicted values in stochastic regression imputation
+set.seed(1)
+predsri <- predict(fity,newdata=data.obs) + rnorm(n,0,sigma(fity))
+y2.sri <- ifelse(is.na(data.obs$y2)==TRUE,predsri,data.obs$y2)
+head(y2.sri)
+```
+Finally, we plot the marginal density of $Y_2$ for both complete (originally simulated) values and completed (after imputation) values using the plot function.
+```{R}
+plot(density(y2), lwd = 2, col = "blue", xlab = expression(Y[2]),
+     main = "MAR with Stochastic Regression Imputation",ylim=c(0,0.25),xlim=c(-7,15))
+lines(density(y2.sri), lwd = 2, col = "red")
+legend(-7, 0.25, legend = c("Complete data", "Imputed completed data"),
+       col = c("blue", "red"), lty = c(1,1), lwd = c(2,2), bty ="n")
+```
+From the plot we can see that the distributions of the data are much more similar now compared to the previous graph. We can also compare the estimated mean and standard deviation of the imputed $Y_2$ variable with the original mean and standard deviation. It can be seen that stochastic regression imputation gives a moderately accurate estimation of parameters.
+```{R}
+mean(y2.sri);mean(y2)
+sd(y2.sri)/sqrt(n);sd(y2)/sqrt(n)
+```
+
+
+(c) For this subquestion we impose missingness on $Y_2$ with the new given instructions. That is, given $a=0$ and $b=2$, $Y_2$ is missing if $a*(Y_1-1)+b*(Y_2-5)+Z_3<0$. The observed dataset is named data.obs2 and is formulated as follows.
+```{R}
+#impose missingness on Y_2
+a = 0
+b = 2
+y2.obs2 <- ifelse(a*(y1-1)+b*(y2-5)+z3<0,NA,y2)
+data.obs2 <- data.frame(y1,y2=y2.obs2)
+head(data.obs2)
+```
+
+This missing data mechanism is MNAR because when $a=0$ and $b=2$, the condition that $Y_2$ is missing can be expressed as $2*(Y_2-5)+Z_3<0$, meaning that the probability of $Y_2$ missing depends on the values of $Y_2$, which is not fully observed.
+
+Finally, we plot the marginal density of $Y_2$ for both complete values and observed values using the plot function.
+```{R}
+y2.obs21 <- y2.obs2[which(is.na(y2.obs2)==FALSE)]
+plot(density(y2), lwd = 2, col = "blue", xlab = expression(Y[2]),
+     main = "MNAR",ylim=c(0,0.3))
+lines(density(y2.obs21), lwd = 2, col = "red")
+legend(-4, 0.25, legend = c("Complete data", "Observed data"),
+       col = c("blue", "red"), lty = c(1,1), lwd = c(2,2), bty ="n")
+```
+From the density graph we can see that the distribution of the complete data and the observed data are quite different as well.
+
+
+(d) To apply stochastic regression imputation, first we need to build a regression model conditioning on $Y_1$. The regression model we use is the same as before. We should fit the regression model to complete cases and obtain estimated regression coefficients $\widehat{\beta}_0$ and  $\widehat{\beta}_1$, and then impute the missing $Y_2$ values based on the fitted regression model and adding a random term which is normally distributed with mean zero and variance equal to the estimated variance of the residuals (i.e.,$z_i\overset{\text{iid}}\sim\text{N}(0,\widehat{\sigma}^2)$).
+```{R}
+fity2 <- lm(y2~y1,data=data.obs2)
+summary(fity2)
+coef(fity2)
+```
+So the fitted model should be $$Y_{2}=4.27803+1.43925*Y_{1}+\varepsilon,\qquad \varepsilon\sim{N}(0,\sigma^2)$$. We'll also use the fitted values vs residuals plot to check the linearity assumption and the Q-Q plot to check the assumption of the normality of error.
+```{R}
+#drawing the two analytic graphs
+par(mfrow=c(1,2))
+plot(fity2$fitted.values, residuals(fity2), main="Fitted vs Residuals", 
+     xlab = "Fitted values", ylab = "Residuals")
+qqnorm(rstandard(fity2))
+qqline(rstandard(fity2),col="red")
+```
+The analysis is almost the same as before and the normality assumption and the constant variance assumption appear to be justified in this model. 
+We now use the predict function to directly compute the predicted values of the missing data in $Y_2$ by passing our fitted regression model. And then we add the random term to complete the stochastic regression imputation.
+```{R}
+set.seed(1)
+predsri2 <- predict(fity2,newdata=data.obs2) + rnorm(n,0,sigma(fity2))
+y2.sri2 <- ifelse(is.na(data.obs2$y2)==TRUE,predsri2,data.obs2$y2)
+head(y2.sri2)
+```
+Finally, we plot the marginal density of $Y_2$ for both complete (originally simulated) values and completed (after imputation) values using the plot function.
+```{R}
+plot(density(y2), lwd = 2, col = "blue", xlab = expression(Y[2]),
+     main = "MNAR with Stochastic Regression Imputation",ylim=c(0,0.25),xlim=c(-7,15))
+lines(density(y2.sri2), lwd = 2, col = "red")
+legend(-7, 0.25, legend = c("Complete data", "Imputed completed data"),
+       col = c("blue", "red"), lty = c(1,1), lwd = c(2,2), bty ="n")
+```
+From the plot we can see that the distributions of the data are much more similar now compared to the previous graph. Computing the values of means and standard deviations, it can also be seen that stochastic regression imputation gives a moderately accurate estimation of parameters.
+```{R}
+mean(y2.sri2);mean(y2)
+sd(y2.sri2)/sqrt(n);sd(y2)/sqrt(n)
+```
+
+
+4.(a) Firstly we conduct a complete case analysis to compute the mean value and the associated standard error of the recovery time. We obtain that the mean value of recovery time is 19.27273 and the associated standard error of the mean is 2.603013. Looking at the data, we observe that only some values of the recovtime variable is missing (indices: 4 10 22). 
+```{R}
+#complete analysis of the dataset
+load("E:/Mae/EDIN/Incomplete Data Analysis/Assignment1/databp.Rdata")
+databp
+n2 <- nrow(databp)
+ind <- which(is.na(databp$recovtime)==FALSE) #indices of subjects with recovtime observed
+#calculate the mean and the associated error
+mean.recovcca <- mean(databp$recovtime,na.rm=TRUE)
+se.recovcca <- sd(databp$recovtime,na.rm=TRUE)/sqrt(length(ind))
+mean.recovcca;se.recovcca
+```
+To calculate the Pearson correlations between the recovery time and the dose, and between the recovery time and blood pressure, we make a subset of databp which contains the complete rows of data and then use the cor function to calculate it.  
+The Pearson correlation between the (log)dose and the recovery time is 0.2391256 and the one between the blood pressure and the recovery time is -0.01952862.
+```{R}
+databpcca <- databp[ind,]
+databpcca
+#calculate the correlations
+cor1 <- cor(databpcca$logdose,databpcca$recovtime,method = "pearson")
+cor2 <- cor(databpcca$bloodp,databpcca$recovtime,method = "pearson")
+cor1;cor2
+```
+
+(b) Now we compute the mean values and the associated standard error of the recovery time using mean imputation.  
+The estimated mean of recovery time is the same as the one using complete data analysis, 19.27273, and the associated standard error is 2.284135. The Pearson correlation now between the (log)dose and the recovery time is 0.2150612 and the one between the blood pressure and the recovery time is -0.01934126.
+```{R}
+#mean imputation
+recovmi <- ifelse(is.na(databp$recovtime)==TRUE,mean(databp$recovtime,na.rm=TRUE),databp$recovtime)
+#calculate the mean and the associated error, and the correlation values
+mean.recovmi <- mean(recovmi)
+se.recovmi <- sd(recovmi)/sqrt(length(recovmi))
+databpmi <- data.frame(logdose=databp$logdose,bloodp=databp$bloodp,recovtime=recovmi)
+cor1mi <- cor(databpmi$logdose,databpmi$recovtime,method = "pearson")
+cor2mi <- cor(databpmi$bloodp,databpmi$recovtime,method = "pearson")
+mean.recovmi;se.recovmi;cor1mi;cor2mi
+```
+
+(c) To use mean regression imputation, first we need to build a regression model conditioning on blood pressure and the logarithm of dose of drug used. The regression model we use is as follows
+\begin{equation*}
+\text{recovtime}=\beta_{0}+\beta_{1}\text{bloodp}+\beta_{2}\text{logdose}+\varepsilon,\qquad \varepsilon\sim{N}(0,\sigma^2).
+\end{equation*}
+We should fit the regression model to complete cases and obtain estimated regression coefficients $\widehat{\beta}_0$ and  $\widehat{\beta}_1$, and then impute the missing $Y_2$ values based on the fitted regression model.
+```{R}
+#build a regression model
+fitbp <- lm(recovtime ~ bloodp + logdose, data=databp)
+summary(fitbp)
+coef(fitbp)
+```
+So the fitted model should be $$recovtime=15.2159-0.2769bloodp+11.4290logdose+\varepsilon,\qquad \varepsilon\sim{N}(0,\sigma^2)$$. Same as before, we'll also use the fitted values vs residuals plot to check the linearity assumption and the Q-Q plot to check the assumption of the normality of error.
+```{R}
+#drawing the two analytic plots
+par(mfrow=c(1,2))
+plot(fitbp$fitted.values, residuals(fitbp), main="Fitted vs Residuals", 
+     xlab = "Fitted values", ylab = "Residuals")
+qqnorm(rstandard(fitbp))
+qqline(rstandard(fitbp),col="red")
+```
+Because the dataset is quite small, the Fitted vs Residuals plot is not as random as it may be in previous regressions, but it does not show a certain pattern and it's almost safe to say the linearity assumption is true. The same is true for the Q-Q plot, as the dots generally stay on the line and its safe to say that the normality assumption is true.
+We now use the predict function to directly compute the predicted values of the missing data in $Y_2$ by passing our fitted regression model. And we can directly show the missing values' imputed values by calling their indices.
+
+```{R}
+#calculate the predicted values in regression imputation
+predbpri <- predict(fitbp,newdata=databp)
+recov.ri <- ifelse(is.na(databp$recovtime)==TRUE,predbpri,databp$recovtime)
+recov.ri[4]; recov.ri[10]; recov.ri[22]
+```
+```{R}
+#calculate the mean and the associated error, and the correlation values
+mean.recovri <- mean(recov.ri)
+se.recovri <- sd(recov.ri)/sqrt(length(recov.ri))
+cor1ri <- cor(databp$logdose,recov.ri,method = "pearson")
+cor2ri <- cor(databp$bloodp,recov.ri,method = "pearson")
+mean.recovri; se.recovri;
+cor1ri;cor2ri
+```
+The estimated mean of recovery time using regression imputation is now 19.44428, and the associated standard error is 2.312845. The Pearson correlation now between the (log)dose and the recovery time is 0.2801835 and the one between the blood pressure and the recovery time is -0.0111364.
+
+(d) To use stochastic regression imputation, we can use the regression model we built in c, and we simply add a random noise, $z_i\overset{\text{iid}}\sim\text{N}(0,\widehat{\sigma}^2)$ ,to complete the stochastic regression imputation.
+```{R}
+#calculate the predicted values in stochastic regression imputation
+set.seed(1)
+predbpsri <- predict(fitbp,newdata=databp) 
+noise <- rnorm(n2,0,sigma(fitbp))
+predbpsri = predbpsri + noise
+recov.sri <- ifelse(is.na(databp$recovtime)==TRUE,predbpsri,databp$recovtime)
+recov.sri[4]; recov.sri[10]; recov.sri[22]; noise
+```
+```{R}
+#calculate the mean and the associated error, and the correlation values
+mean.recovsri <- mean(recov.sri)
+se.recovsri <- sd(recov.sri)/sqrt(length(recov.sri))
+cor1sri <- cor(databp$logdose,recov.sri,method = "pearson")
+cor2sri <- cor(databp$bloodp,recov.sri,method = "pearson")
+mean.recovsri; se.recovsri;
+cor1sri;cor2sri
+```
+The estimated mean of recovery time using stochastic regression imputation is now 19.44428, and the associated standard error is 2.312845. The Pearson correlation now between the (log)dose and the recovery time is 0.2801835 and the one between the blood pressure and the recovery time is -0.0111364.
+When conducting stochastic regression imputation in real life datasets, we need to be careful with the noise, as it can be very random and very negative values, and could cause a certain variable that's supposed to be positive (in this case, recovery time) to end up being negative. For example, we can see from above R printouts that the noise in this regression model can be as negative as -27, which could be a problem.
+
+
+(e) To apply predictive mean matching, we can use the regression model built in (c). We can determine the indices of the missing values and the observed values using the following code (or by directly looking at the data):
+```{R}
+indm <- which(is.na(databp$recovtime)==TRUE)  #indices of subjects with recovtime missing
+indc <- which(is.na(databp$recovtime)==FALSE) #indices of subjects with recovtime observed
+indm;indc
+```
+For each entry of missing data, we use the following loop to determine which of the observed values has the closest prediction value with its own prediction value. The distance here is measured by the squared difference.
+```{R}
+smallestindices = c() #initialize a vector to store the corresponding indices
+for (i in indm){
+  #first loop over the missing values
+  min.dis = 10000  #initialize the minimum distance as 10000 (a very large number)
+  vali <- predict(fitbp,newdata=databp[i,]) #for each missing value, we compute its predicted value
+  for (j in indc){
+    #then loop over the observed values
+    valj <- predict(fitbp,newdata=databp[j,]) # compute the observed subject's predicted value
+    distanceij <- (valj-vali)^2
+    if (distanceij < min.dis){
+      #update the minimum distance if a smaller one is found
+      min.dis <- distanceij
+      smallestindex <- j 
+    }
+  }
+  #for each i, we obtain the closest prediction value's index
+  #and append it to our vector
+  smallestindices = c(smallestindices,smallestindex)  
+}
+smallestindices
+```
+After obtaining the indices of the donors, we can obtain the corresponding donors' values and impute them into the missing values.
+```{R}
+#obtain the donors' values and impute the missing values with the donors' values
+rawrecov <- databp$recovtime
+rawrecov[indm] = rawrecov[smallestindices]
+recovpmm = rawrecov
+recovpmm
+```
+```{R}
+#calculate the mean and the associated error, and the correlation values
+mean.recovpmm <- mean(recovpmm)
+se.recovpmm <- sd(recovpmm)/sqrt(length(recovpmm))
+cor1pmm <- cor(databp$logdose,recovpmm,method = "pearson")
+cor2pmm <- cor(databp$bloodp,recovpmm,method = "pearson")
+mean.recovpmm; se.recovpmm;
+cor1pmm;cor2pmm
+```
+The estimated mean of recovery time using stochastic regression imputation is now 19.44, and the associated standard error is 2.464467. The Pearson correlation now between the (log)dose and the recovery time is 0.3037945 and the one between the blood pressure and the recovery time is -0.03208685.
+
+(f) In our above example, just like we analyzed in (d), the stochastic regression imputation's noise is a very random number, and can have very large or small values depending on its variance. It may not pose as a problem when computing the missing variable's mean, but individually it can have very far-off predictions. Predictive mean matching, on the contrary, generate all imputations that are real data that are within the reasonable range, and they are much more like real values. 
+However, if the missing data itself is outside the range of the observed values (may be because it has very different values in the explanatory variables), say 300 when conducting regression imputation, while the observed data's closest prediction value is only 100, it will be imputed as 100 because 100 is the closest value available. Such imputations can lead to biased analysis. Besides, it only considered the distance between the predicted values and ignored the possible relationships and similarity in the explanatory variables.
+
+

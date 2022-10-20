@@ -1,0 +1,345 @@
+---
+title:  |
+  <center> Assignment 2 for Incomplete Data Analysis <center>
+author: "Maeve Li (Minqing Li) s2167017"
+output: 
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+1. (a) As $F(y)=\Pr(Y\leq y)$ and the survival function is defined as $S(y)=\Pr(Y\geq y)$, we can see that $F(y)+S(y)=1$, and thus the survival function $S(y;\theta)$ here is
+\begin{equation*}
+S(y;\theta)=1-F(y;\theta)=1-(1-e^{-y^2/(2\theta)})=e^{-y^2/(2\theta)}
+\end{equation*}
+We know that the contribution to the likelihood from a non-censored observation is $f(y;\theta)$. For the censored part in this question, i.e. when $Y_i>C$, the contribution to the likelihood would be $\Pr(Y>C)=S(C;\theta)$. With the assumption of independence between $Y_is$, we can therefore write the likelihood as
+\begin{align*}
+L(\theta)&=\prod_{i=1}^{n}\left\{[f(y_i;\theta)]^{r_i}[S(C;\theta)]^{1-r_i}\right\}\\
+&=\prod_{i=1}^{n}\left\{[\frac{y_i}{\theta} e^{-y_i^2/(2\theta)}]^{r_i}[e^{-C^2/(2\theta)}]^{1-r_i}\right\}\\
+&=\theta^{-\sum_{i=1}^{n} r_i}e^{-\frac{1}{2\theta}\sum_{i=1}^{n}y_i^2r_i}e^{-\frac{1}{2\theta}\sum_{i=1}^{n}C^2(1-r_i)}\prod_{i=1}^{n}y_ir_i\\
+&=\theta^{-\sum_{i=1}^{n} r_i}e^{-\frac{1}{2\theta}\sum_{i=1}^{n}y_i^2r_i+C^2(1-r_i)}\prod_{i=1}^{n}y_ir_i,\\
+\end{align*}
+Note that
+\begin{equation*}
+x_i=y_ir_i+C(1-r_i)
+\end{equation*}
+and the fact that $r_i$ are binary variables (which means that either $r_i$ or $1-r_i$ is bound to be zero, and the other one would be one), we have that
+\begin{equation*}
+x_i^2=y_i^2r_i^2+C^2(1-r_i)^2+2y_ir_iC(1-r_i)=y_i^2r_i+C^2(1-r_i)
+\end{equation*}
+Thus, the likelihood could be written as
+\begin{equation*}
+L(\theta)=\theta^{-\sum_{i=1}^{n} r_i}e^{-\frac{1}{2\theta}x_i^2}\prod_{i=1}^{n}y_ir_i.
+\end{equation*}
+The corresponding loglikelihood is
+\begin{equation*}
+\log L(\theta)=-\log\theta\sum_{i=1}^{n}r_i-\frac{1}{2\theta}\sum_{i=1}^{n}x_i^2+\sum_{i=1}^{n}\log (y_ir_i).
+\end{equation*}
+We thus can take the derivative and set it to zero and have
+\begin{equation*}
+\frac{\text{d}}{\text{d}\theta}\log L(\theta)=-\frac{\sum_{i=1}^{n}r_i}{\theta}+\frac{1}{2\theta^2}\sum_{i=1}^{n}x_i=0.
+\end{equation*}
+which gives us
+\begin{equation*}
+\frac{1}{2\theta^2}\sum_{i=1}^{n}x_i=\frac{\sum_{i=1}^{n}r_i}{\theta}
+\end{equation*}
+and thus leading to
+\begin{equation*}
+\widehat{\theta}_{\text{MLE}}=\frac{\sum_{i=1}^{n}X_i^2}{\sum_{i=1}^{n} 2R_i}.
+\end{equation*}
+
+(b) We have
+\begin{equation*}
+\frac{\text{d}^2}{\text{d}\theta^2}\log L(\theta)=\frac{\sum_{i=1}^{n}r_i}{\theta^2}-\frac{\sum_{i=1}^{n}x_i^2}{\theta^3}
+\end{equation*}
+The expected information is
+\begin{align*}
+I(\theta)&=-E\left(\frac{\sum_{i=1}^{n}R_i}{\theta^2}-\frac{\sum_{i=1}^{n}X_i^2}{\theta^3}\right)\\
+&=-\frac{1}{\theta^2}E(\sum_{i=1}^{n}R_i)+\frac{1}{\theta^3}E(\sum_{i=1}^{n}X_i^2)\\
+&=-\frac{n}{\theta^2}E(R)+\frac{n}{\theta^3}E(X^2)
+\end{align*}
+Note that $R$ is a binary random variable and so
+\begin{align*}
+E(R)&=1\times\Pr(R=1)+0\times\Pr(R=0)\\
+&=\Pr(R=1)\\
+&=\Pr(Y\leq C)\\
+&=F(C;\theta)\\
+&=1-e^{-C^2/(2\theta)}.
+\end{align*}
+For $E(X^2)$ we have that
+\begin{align*}
+E(X^2)&=E(Y^2R)+E(C^2(1-R))\\
+&=E(Y^2\mid Y\leq C)\Pr(Y\leq C)+C^2\Pr(Y>C)
+\end{align*}
+Using the given hint, we have that
+\begin{align*}
+E(Y^2\mid Y\leq C)\Pr(Y\leq C)&=F(C)\times \frac{1}{F(C)}\int_{0}^{C}y^2f(y;\theta)\text{d}y\\
+&=-C^2e^{-C^2/(2\theta)}+2\theta(1-e^{-C^2/(2\theta)})
+\end{align*}
+Therefore,
+\begin{align*}
+E(X^2)&=-C^2e^{-C^2/(2\theta)}+2\theta(1-e^{-C^2/(2\theta)})+C^2S(C;\theta)\\
+&=-C^2e^{-C^2/(2\theta)}+2\theta(1-e^{-C^2/(2\theta)})+C^2e^{-C^2/(2\theta)}\\
+&=2\theta(1-e^{-C^2/(2\theta)})
+\end{align*}
+And thus we get
+\begin{align*}
+I(\theta)&=-\frac{n}{\theta^2}(1-e^{-C^2/(2\theta)})+\frac{n}{\theta^3}\times 2\theta(1-e^{-C^2/(2\theta)})\\
+&=-\frac{n}{\theta^2}(1-e^{-C^2/(2\theta)})+\frac{2n}{\theta^2}(1-e^{-C^2/(2\theta)})\\
+&=\frac{n}{\theta^2}(1-e^{-C^2/(2\theta)})
+\end{align*}
+When calculating it we could plug in the values of $\widehat{\theta}_{\text{MLE}}$ that we estimated before. 
+
+(c) Because of the asymptotic normality of the MLE, we have that
+\begin{equation*}
+\widehat{\theta}_{\text{MLE}}\sim N_p(\theta,I(\theta)^{-1})
+\end{equation*}
+Therefore, the 95% confidence interval is formed as follows
+\begin{equation*}
+(\widehat{\theta}_{\text{MLE}}-z\sqrt{I(\theta)^{-1}}, \widehat{\theta}_{\text{MLE}}+z\sqrt{I(\theta)^{-1}})
+\end{equation*}
+where $z=1.96$ (for a 95% confidence), $\widehat{\theta}_{\text{MLE}}=\frac{\sum_{i=1}^{n}X_i^2}{\sum_{i=1}^{n} 2R_i}$, and $I(\theta)=\frac{n}{\theta^2}(1-e^{-C^2/(2\theta)})$, which means that it's equal to
+\begin{equation*}
+\left(\frac{\sum_{i=1}^{n}X_i^2}{\sum_{i=1}^{n} 2R_i}-1.96\sqrt{\frac{1}{\frac{n}{\theta^2}(1-e^{-C^2/(2\theta)})}}, \frac{\sum_{i=1}^{n}X_i^2}{\sum_{i=1}^{n} 2R_i}+1.96\sqrt{\frac{1}{\frac{n}{\theta^2}(1-e^{-C^2/(2\theta)})}}\right)
+\end{equation*}
+Here we could also plug in the values of $\widehat{\theta}_{\text{MLE}}$ that we estimated before in $I(\theta)$.
+
+2. (a) Similar as before, we know that the contribution to the likelihood from a non-censored observation is $f(y;\theta)$, in this case $\phi(y_i;\mu,\sigma^2)$. For the censored part in this question, i.e. when $Y_i<D$, the contribution to the likelihood would be $\Pr(Y<D)=\Phi(C;\mu,\sigma^2)$. With the assumption of independence between $Y_is$, we can therefore write the likelihood as
+\begin{align*}
+L(\mu,\sigma^2)&=\prod_{i=1}^{n}\left\{[\phi(y_i;\mu,\sigma^2)]^{r_i}[\Phi(D;\mu,\sigma^2)]^{1-r_i}\right\}\\
+\end{align*}
+thus the loglikelihood is
+\begin{align*}
+logL(\mu,\sigma^2)&=\sum_{i=1}^{n}\left\{r_ilog\phi(y_i;\mu,\sigma^2)+(1-r_i)log\Phi(D;\mu,\sigma^2)\right\}\\
+\end{align*}
+Note that $r_i$ is a binary variable and $x_i$ is conditionally defined. We notice that the term $r_ilog\phi(y_i;\mu,\sigma^2)$ would only be non-zero when $r_i=1$, and when $r_i=1$, $x_i$ can only take the value $y_i$, and thus we can rewrite it as $r_ilog\phi(x_i;\mu,\sigma^2)$ (in another way of speaking, it would be 0 if $r_i=0$ and $x_i=D$, and would be $log\phi(x_i;\mu,\sigma^2)$ if $r_i=1$ and $x_i=y_i$, which is equivalent to $r_ilog\phi(y_i;\mu,\sigma^2)$).  
+Similarly, the term $(1-r_i)log\Phi(D;\mu,\sigma^2)$ would only be non-zero when $r_i=0$, and when $r_i=0$ $x_i$ can only take the value $D$, and thus we can rewrite it as $(1-r_i)log\Phi(x_i;\mu,\sigma^2)$. Therefore, the loglikelihood can be written as 
+\begin{equation*}
+logL(\mu,\sigma^2\mid \bold{x},\bold{r})=\sum_{i=1}^{n}\left\{r_ilog\phi(x_i;\mu,\sigma^2)+(1-r_i)log\Phi(x_i;\mu,\sigma^2)\right\}
+\end{equation*}
+
+   (b) We first load the data and construct the loglikelihood function according to the above formula. 
+   
+```{r}
+# load the libraries required and the data
+load("E:/Mae/EDIN/Incomplete Data Analysis/Assignment2/dataex2.Rdata")
+library(maxLik)
+head(dataex2)
+```
+
+```{r}
+# construct the above loglikelihood function with known sigma^2 = 1.5^2
+norm.loglike <- function(mu, data){
+  x <- data[,1]; r <- data[,2]
+  sum(r*log(dnorm(x, mean=mu, sd=1.5))+
+        (1-r)*log(pnorm(x, mean=mu, sd=1.5)))
+}
+```
+
+Then we use the \texttt{maxLik} function to calculate the ML estimator value with the loglikelihood function we constructed and an arbitrary starting value (here we choose 1).
+```{r}
+mle_mu <- maxLik(logLik = norm.loglike, data = dataex2, start = 1)
+summary(mle_mu)
+```
+From the summary, the maximum likelihood estimate of $\mu$ is $\widehat{\mu}_{\text{MLE}}=5.5328$. 
+
+3. (a) This missing data mechanism is ignorable for likelihood inference. The probability of $Y_2$ missing here is only depending on $Y_1$, so data are MAR (or MCAR if $\phi_1=0$). The parameters for the missing data mechanism $\phi=(\phi_0, \phi_1)$ is distinct from the parameters for the data model $\theta$ (as stated in the question), so the mechanism is ignorable for likelihood inference.
+   (b) This missing data mechanism is not ignorable for likelihood inference. The probability of $Y_2$ missing here is depending on $Y_2$ itself, so data are MNAR. Although the two parameter spaces are distinct, unless $\phi_1$ is specified to be 0 which would cause the data to be MCAR, this mechanism is not ignorable for likelihood inference.
+   (c) This missing data mechanism is not ignorable for likelihood inference. Although the probability of $Y_2$ missing here is only depending on $Y_1$ so data are MAR (or MCAR if $\phi_1=0$), the two parameter spaces are not distinct. Parameter space for the missingness mechanism is $(\mu_1,\phi)$, and parameter space for the data model is $\theta=(\mu_1,\mu_2,\sigma_1^2,\sigma_{12},\sigma_2^2)$, which means that the model for the missing data mechanism contains information about the parameters of the data model ($\mu_1$). Therefore, the two parameter spaces are not distinct and this missing data mechanism is not ignorable for likelihood inference.
+   
+4. In this question, we have that $y_{\text{obs}}=\{y_1,y_2,...,y_m\}$ and $y_{\text{mis}}=\{y_{m+1},y_{m+2},...,y_n\}$. We also have that $\boldsymbol{\beta}=(\beta_1,\beta_2)'$. The likelihood of the total data is given by
+\begin{align*}
+L(\boldsymbol{\beta};y_{\text{obs}},y_{\text{mis}})&=\prod_{i=1}^{n}\{p_i(\boldsymbol{\beta})^{y_i}[1-p_i(\boldsymbol{\beta})]^{1-y_i}\}\\
+&=\prod_{i=1}^{n}\left\{\left(\frac{e^{\beta_0+x_i\beta_1}}{1+e^{\beta_0+x_i\beta_1}}\right)^{y_i}\left(\frac{1}{1+e^{\beta_0+x_i\beta_1}}\right)^{1-y_i}\right\}.
+\end{align*}
+The corresponding log likelihood is
+\begin{align*}
+\log L(\boldsymbol{\beta};y_{\text{obs}},y_{\text{mis}})&=\sum_{i=1}^{n}\left\{y_i\log\left(\frac{e^{\beta_0+x_i\beta_1}}{1+e^{\beta_0+x_i\beta_1}}\right)+(1-y_i)\log\left(\frac{1}{1+e^{\beta_0+x_i\beta_1}}\right)\right\}\\
+&=\sum_{i=1}^{n}\{y_i(\beta_0+x_i\beta_1)-\log(1+e^{\beta_0+x_i\beta_1})\}.
+\end{align*}
+For the E-step we need to calculate
+\begin{align*}
+Q(\boldsymbol{\beta}\mid\boldsymbol{\beta}^{(t)})&=E_{Y_{mis}}\left[\log L(\boldsymbol{\beta}; y_{\text{obs}}, y_{\text{mis}})\mid y_{\text{obs}},\boldsymbol{\beta}^{(t)}\right]\\
+&=\sum_{i=1}^{m}y_i(\beta_0+x_i\beta_1)-\sum_{i=1}^{n}\log(1+e^{\beta_0+x_i\beta_i})+\sum_{i=m+1}^{n}E\left[y_i(\beta_0+x_i\beta_1)\mid y_{\text{obs}},\boldsymbol{\beta}^{(t)}\right]\\
+\end{align*}
+where $E[y_i(\beta_0+x_i\beta_1)\mid y_{\text{obs}},\boldsymbol{\beta}^{(t)}]=(\beta_0+\beta_1x_i)E[y_i\mid y_{\text{obs}},\boldsymbol{\beta}^{(t)}]$. Therefore, we need to calculate $E[y_i\mid y_{\text{obs}},\boldsymbol{\beta}^{(t)}]$, and as $Y_i$ follows a Bernoulli distribution, we have that
+\begin{equation*}
+E[y_i\mid y_{\text{obs}},\boldsymbol{\beta}^{(t)}]=\Pr(y_i=1)=p_i(\boldsymbol{\beta}^{(t)})=\left(\frac{e^{\beta_0^{(t)}+x_i\beta_1^{(t)}}}{1+e^{\beta_0^{(t)}+x_i\beta_1^{(t)}}}\right).
+\end{equation*}
+Replacing, we get
+\begin{align*}
+Q(\boldsymbol{\beta}\mid\boldsymbol{\beta}^{(t)})&=\sum_{i=1}^{m}y_i(\beta_0+x_i\beta_1)-\sum_{i=1}^{n}\log(1+e^{\beta_0+x_i\beta_i})+\sum_{i=m+1}^{n}(\beta_0+\beta_1x_i)\left(\frac{e^{\beta_0^{(t)}+x_i\beta_1^{(t)}}}{1+e^{\beta_0^{(t)}+x_i\beta_1^{(t)}}}\right).
+\end{align*}
+In the M-step, we obtain $\boldsymbol{\beta}^{(t+1)}$, the value of $\boldsymbol{\beta}$ that maximises $Q(\boldsymbol{\beta}\mid\boldsymbol{\beta}^{(t)})$. That is, 
+\begin{equation*}
+\boldsymbol{\beta}^{(t+1)}=\text{arg}\max_{\boldsymbol{\beta}}Q(\boldsymbol{\beta}\mid\boldsymbol{\beta}^{(t)})
+\end{equation*}
+The idea is that we calculate the partial derivatives (with respect to $\beta_0$ and $\beta_1$) and set them to zero. Here, the FOC is hard to calculate and we use the built in function \texttt{optim} or \texttt{maxLik} to implement that step. The E-step and the M-step is repeated until some convergence criterion is met.   
+Now we implement this algorithm in \texttt{R}. Since we don't have the exact updating formula, we need to derive the $Q(\boldsymbol{\beta}\mid\boldsymbol{\beta}^{(t)})$ function at each iteration and use $\texttt{optim}$ to obtain the value that maximises it.
+```{r}
+load("E:/Mae/EDIN/Incomplete Data Analysis/Assignment2/dataex4.Rdata")
+head(dataex4)
+```
+
+```{r}
+# obtain missing values' indices
+na.ind <- which(is.na(dataex4$Y))
+
+# derive Q-function
+Estep.Q = function(beta, data, betaold){
+  beta0 = beta[1]
+  beta1 = beta[2]
+  beta0.t = betaold[1]
+  beta1.t = betaold[2]
+  
+  sum(dataex4$Y[-na.ind]*(beta0+data$X[-na.ind]*beta1)) - 
+    sum(log(1+exp(beta0+beta1*data$X))) +
+    sum((beta0+beta1*data$X[na.ind]) * (exp(beta0.t+beta1.t*data$X[na.ind]) /
+          (1+exp(beta0.t+beta1.t*data$X[na.ind]))))
+}
+```
+
+```{r}
+# construct the whole EM algorithm function
+EM.beta <- function(beta, data, eps){
+  
+  # initialize certain values
+  diff <- 1
+  beta = beta 
+  beta1 = beta[1]
+  beta2 = beta[2]
+  eps = eps
+  
+  while (diff > eps){
+    beta.old <- beta
+    opt.bb <- optim(c(1,1), Estep.Q, data = data, betaold = beta.old,
+                  control = list(fnscale = -1)) # implement M step
+    beta1 = opt.bb$par[1]
+    beta2 = opt.bb$par[2]
+    beta = c(beta1,beta2)
+    diff = sum(abs(beta-beta.old))
+  }
+  return(beta)
+}
+
+EM.beta(c(1,1), dataex4, 0.00001)
+```
+Therefore, based on the data available, the maximum likelihood estimates of $\beta_1$ and $\beta_2$ using the EM algorithm are $\widehat{\beta_1}_{\text{MLE}}=0.9756434$ and $\widehat{\beta_2}_{\text{MLE}}=-2.4786993$.
+
+5. (a) In this mixture distribution, we define an augmented complete dataset where $Y_\text{obs}=\boldsymbol{Y}=Y_1,Y_2,\ldots,Y_n$ and $Y_\text{mis}=\boldsymbol{Z}=(z_1,z_2,\ldots,z_n)$ is a vector of binary latent group indicator, such that
+\begin{equation*}
+z_i=
+\begin{cases}
+1, & \text{if } y_i \text{ belongs to the first component of the mixture distribution (the lognormal part)}\\
+0, & \text{if } y_i \text{ belongs to the second component of the mixture distribution (the exponential part)}\\
+\end{cases}
+\end{equation*}
+Note that $\Pr(z_i=1)=p$, indicating that $z_i\overset{\text{iid}}\sim\text{Bernoulli}(p)$.  
+Thus, we have the complete data likelihood as
+\begin{equation*}
+L(\theta \mid \boldsymbol{y},\boldsymbol{z})=\prod_{i=1}^{n}\left\{[pf_{\text{LogNormal}}(y_i;\mu,\sigma^2)]^{z_i}[(1-p)f_{\text{Exp}}(y_i;\lambda)]^{1-z_i}\right\}
+\end{equation*}
+with the corresponding log likelihood being
+\begin{equation*}
+\log L(\theta;  \boldsymbol{y},\boldsymbol{z})=\sum_{i=1}^{n}z_i\{\log p+\log f_{\text{LogNormal}}(y_i;\mu,\sigma^2)\}+\sum_{i=1}^{n}(1-z_i)\{\log (1-p)+\log f_{\text{Exp}}(y_i;\lambda)\}.
+\end{equation*}
+For the E-step we need to compute
+\begin{align*}
+Q(\theta\mid\theta^{(t)})&=E_z[\log L(\theta;  \boldsymbol{y},\boldsymbol{z})\mid \boldsymbol{y},\theta^{(t)}]\\
+&=\sum_{i=1}^{n}E[z_i\mid y_i,\theta^{(t)}]\{\log p+\log f_{\text{LogNormal}}(y_i;\mu,\sigma^2)\}\\
+&+\sum_{i=1}^{n}(1-E[z_i\mid y_i,\theta^{(t)}])\{\log (1-p)+\log f_{\text{Exp}}(y_i;\lambda)\}
+\end{align*}
+Since $E[Z_i\mid y_i,\theta^{(t)}]=\Pr(Z_i=1\mid y_i,\theta^{(t)})$, we have
+\begin{align*}
+E[Z_i\mid y_i,\theta^{(t)}]&=1 \times \Pr(Z_i=1\mid y_i,\theta^{(t)}) + 0 \times \Pr(Z_i=0\mid y_i,\theta^{(t)})\\
+&=\frac{p^{(t)}\frac{1}{y_i \sqrt{2\pi(\sigma^{(t)})^2}}\exp\{-\frac{1}{2(\sigma^{(t)})^2}(\log y_i-\mu^{(t)})^2\}}{p^{(t)}\frac{1}{y_i \sqrt{2\pi(\sigma^{(t)})^2}}\exp\{-\frac{1}{2(\sigma^{(t)})^2}(\log y_i-\mu^{(t)})^2\}+(1-p^{(t)})\lambda^{(t)} \exp\{-\lambda^{(t)} y_i\}}\\
+&=\tilde{p}_i^{(t)}
+\end{align*}
+Therefore,
+\begin{align*}
+Q(\theta\mid\theta^{(t)})&=\sum_{i=1}^{n}\tilde{p}_i^{(t)}\{\log p+\log f_{\text{LogNormal}}(y_i;\mu,\sigma^2)\}\\
+&+\sum_{i=1}^{n}\tilde{p}_i^{(t)}\{\log (1-p)+\log f_{\text{Exp}}(y_i;\lambda)\}
+\end{align*}
+For the M-step, we need to compute the partial derivatives to obtain the updating function. We have for $p^{(t+1)}$ that
+\begin{align*}
+&             &\frac{\partial}{\partial p}Q(\theta\mid\theta^{(t)})&=0&\\
+&\Rightarrow  &\frac{\sum_{i=1}^{n}\tilde{p}_i^{(t)}}{p}-\frac{\sum_{i=1}^{n}(1-\tilde{p}_i^{(t)})}{1-p}&=0&\\
+&\Rightarrow  &\frac{\sum_{i=1}^{n}\tilde{p}_i^{(t)}}{p}&=\frac{\sum_{i=1}^{n}(1-\tilde{p}_i^{(t)})}{1-p}&\\
+&\Rightarrow  &(1-p)\sum_{i=1}^{n}\tilde{p}_i^{(t)}&=np-p\sum_{i=1}^{n}\tilde{p}_i^{(t)}&\\
+&\Rightarrow  &p^{(t+1)}&=\frac{\sum_{i=1}^{n}\tilde{p}_i^{(t)}}{n}&
+\end{align*}
+We have for $\mu^{(t+1)}$ that
+\begin{align*}
+&             &\frac{\partial}{\partial \mu}Q(\theta\mid\theta^{(t)})&=0&\\
+&\Rightarrow  &-\frac{\sum_{i=1}^{n}\tilde{p}_i^{(t)}2(\log y_i-\mu)\times(-1)}{2\sigma^2}&=0&\\
+&\Rightarrow  &\sum_{i=1}^{n}\tilde{p}_i^{(t)}(\log y_i-\mu)&=0&\\
+&\Rightarrow  &\mu^{(t+1)}&=\frac{\sum_{i=1}^{n}\tilde{p}_i^{(t)}\log y_i}{\sum_{i=1}^{n}\tilde{p}_i^{(t)}}&
+\end{align*}
+We have for $(\sigma^{(t+1)})^2$ that
+\begin{align*}
+&             &\frac{\partial}{\partial \sigma^2}Q(\theta\mid\theta^{(t)})&=0&\\
+&\Rightarrow  &\sum_{i=1}^{n}\tilde{p}_i^{(t)}(-\frac{1}{2\sigma^2}+\frac{1}{2(\sigma^2)^2}(\log y_i-\mu^{(t+1)})^2)&=0&\\
+&\Rightarrow  &\sum_{i=1}^{n}\frac{1}{\sigma^2}(\log y_i-\mu^{(t+1)})^2&=\sum_{i=1}^{n}\tilde{p}_i^{(t)}&\\
+&\Rightarrow  &(\sigma^{(t+1)})^2&=\frac{\sum_{i=1}^{n}\tilde{p}_i^{(t)}(\log y_i-\mu^{(t+1)})^2}{\sum_{i=1}^{n}\tilde{p}_i^{(t)}}
+\end{align*}
+And at last we have for $\lambda^{(t+1)}$ that
+\begin{align*}
+&             &\frac{\partial}{\partial \lambda}Q(\theta\mid\theta^{(t)})&=0&\\
+&\Rightarrow  &\sum_{i=1}^{n}(1-\tilde{p}_i^{(t)})(\frac{1}{\lambda}-y_i)&=0&\\
+&\Rightarrow  &\lambda^{(t+1)}&=\frac{\sum_{i=1}^{n}(1-\tilde{p}_i^{(t)})}{\sum_{i=1}^{n}(1-\tilde{p}_i^{(t)})y_i}&
+\end{align*}
+and the above four updating equations can be solved iteratively.
+
+(b) Using the obtained updating equations, we load the data and implement the EM algorithm in \texttt{R} as follows. Note that here we enter the $\sigma$ value, not the $\sigma^2$ value for the initial values.
+```{R}
+# load the data
+load("E:/Mae/EDIN/Incomplete Data Analysis/Assignment2/dataex5.Rdata")
+
+# construct the EM algorithm function
+em.mixture <- function(y, theta0, eps){
+  n <- length(y)
+  theta <- theta0
+  p <- theta[1]; mu <- theta[2]
+  sigma <- theta[3]; lambda <- theta[4]
+  diff <- 1
+  
+  while(diff > eps){
+    theta.old <- theta
+    
+    # E-step
+    ptilde1 <- p*dlnorm(y, meanlog = mu, sdlog = sigma)
+    ptilde2 <- (1-p)*dexp(y, rate = lambda)
+    ptilde <- ptilde1/(ptilde1 + ptilde2)
+    
+    # M-step
+    p <- mean(ptilde)
+    mu <- sum(log(y)*ptilde)/sum(ptilde)
+    sigma <- sqrt(sum(((log(y) - mu)^2)*ptilde)/sum(ptilde))
+    lambda <- sum(1-ptilde)/sum((1-ptilde)*y)
+    
+    theta <- c(p, mu, sigma, lambda)
+    diff <- sum(abs(theta - theta.old))
+  }
+  return(theta)
+}
+
+# implement the algorithm with initial values (0.1, 1, 0.5, 2)
+res <- em.mixture(dataex5, c(0.1,1,0.5,2), 0.00001)
+res
+```
+Thus, the maximum likelihood estimate using the EM algorithm is $\widehat{p}=0.4795916,\widehat{\mu}=2.0131468,\widehat{\sigma}=0.9294364, \widehat{\lambda}=1.0331395$.  
+We now plot the histogram of the original data and lay the density of our estimated distribution on top of it.
+```{r}
+p <- res[1]; mu <- res[2]
+sigma <- res[3]; lambda <- res[4]
+
+hist(dataex5, main = "Observed Histogram of Y", 
+     xlab = "Y", ylab = "Density", cex.main = 1.5, 
+     cex.lab = 1.5, cex.axis = 1.4, freq = F, ylim = c(0,0.2))
+curve(p*dlnorm(x, mu, sigma) + (1 - p)*dexp(x, lambda),
+      add = TRUE, lwd = 2, col = "blue2")
+legend("right", legend = "estimated density", lty = 1, col = "blue2")
+```
+We can see from the histogram and the estimated density function that is overlaid, the shapes resemble greatly.
+
+

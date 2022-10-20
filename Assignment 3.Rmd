@@ -1,0 +1,493 @@
+---
+title:  |
+  <center> Assignment 3 for Incomplete Data Analysis <center>
+author: "Maeve Li (Minqing Li) s2167017"
+output: 
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+1. (a) We first load the \texttt{mice} package and take a quick look at the \texttt{nhanes} dataset and its dimensions.
+```{r}
+library(mice)
+```
+```{r}
+dim(nhanes)
+```
+We can see that it has 25 rows and 4 columns, which means that it has 25 cases and 4 variables. We can thus compute the percentage of incomplete cases, which is 48%.
+```{r}
+# subtract the percentage of complete data from 1 to obtain the imcomplete percentage
+1-nrow(cc(nhanes))/nrow(nhanes) 
+```
+
+(b) The imputation using \texttt{mice}'s defaults and seed = 1 is performed below. We can see that 5 imputations are performed. Regression analysis and the pooled results are also conducted as follows.
+```{r}
+library(JointAI)
+```
+```{r}
+# impute the data using defaults with seed 1
+nh.imps1 <- mice(nhanes, printFlag = FALSE, seed = 1)
+nh.imps1
+# we can check for convergence and everything seems ok
+plot(nh.imps1)
+# check if mice detected any problems
+nh.imps1$loggedEvents
+
+# predict bmi from age, hyp and chl
+nh.fits1 <- with(nh.imps1, lm(bmi ~ age + hyp + chl))
+nh.ests1 <- pool(nh.fits1)
+
+nh.ests1
+```
+To report the proportions of variance due to the missing data for each parameter, we look at the pooled results' lambda column, which stores the proportion of variance in the parameter of interest due to the missing values and which is given by $\frac{B+\frac{B}{M}}{V^{T}}$. For \texttt{age} the proportion is 68.640637%, for \texttt{hyp} the proportion is 35.043452%, and for \texttt{chl} the proportion is 30.408063%. Therefore, \texttt{age} seems to be the most affected by the missing values as it has largest proportion of (increased extra) variance, and the second is \texttt{hyp}. \texttt{chl} has a relatively small proportion of variance due to missing data in the dataset.
+
+(c) We now use 5 different seeds to perform the same analysis.
+```{r}
+nh.imps2 <- mice(nhanes, printFlag = FALSE, seed = 2)
+nh.imps3 <- mice(nhanes, printFlag = FALSE, seed = 3)
+nh.imps4 <- mice(nhanes, printFlag = FALSE, seed = 4)
+nh.imps5 <- mice(nhanes, printFlag = FALSE, seed = 5)
+nh.imps6 <- mice(nhanes, printFlag = FALSE, seed = 6)
+
+nh.fits2 <- with(nh.imps2, lm(bmi ~ age + hyp + chl))
+nh.ests2 <- pool(nh.fits2)
+
+nh.fits3 <- with(nh.imps3, lm(bmi ~ age + hyp + chl))
+nh.ests3 <- pool(nh.fits3)
+
+nh.fits4 <- with(nh.imps4, lm(bmi ~ age + hyp + chl))
+nh.ests4 <- pool(nh.fits4)
+
+nh.fits5 <- with(nh.imps5, lm(bmi ~ age + hyp + chl))
+nh.ests5 <- pool(nh.fits5)
+
+nh.fits6 <- with(nh.imps6, lm(bmi ~ age + hyp + chl))
+nh.ests6 <- pool(nh.fits6)
+
+nh.ests2
+nh.ests3
+nh.ests4
+nh.ests5
+nh.ests6
+```
+As can be seen from above, the results differ significantly using different seeds. In seed 4, the variable that has the largest proportion is \texttt{chl} (33.05334%), which is the opposite result from seed 1. Seed 5 also gave a different result, leading to \texttt{hyp} being the most affected variable (59.42866%). The other seeds 2, 3 and 6 still have \texttt{bmi} as the most affected variable, which is the same result as seed 1, but the second most affected ones in these seeds are all \texttt{chl}. 
+
+(d) We now use $M=100$ to perform the same analysis for the same seeds.
+```{r}
+# Using a different M with different seeds
+nh.imps1_100 <- mice(nhanes, m = 100, printFlag = FALSE, seed = 1)
+nh.imps2_100 <- mice(nhanes, m = 100, printFlag = FALSE, seed = 2)
+nh.imps3_100 <- mice(nhanes, m = 100, printFlag = FALSE, seed = 3)
+nh.imps4_100 <- mice(nhanes, m = 100, printFlag = FALSE, seed = 4)
+nh.imps5_100 <- mice(nhanes, m = 100, printFlag = FALSE, seed = 5)
+nh.imps6_100 <- mice(nhanes, m = 100, printFlag = FALSE, seed = 6)
+
+nh.fits1_100 <- with(nh.imps1_100, lm(bmi ~ age + hyp + chl))
+nh.ests1_100 <- pool(nh.fits1_100)
+
+nh.fits2_100 <- with(nh.imps2_100, lm(bmi ~ age + hyp + chl))
+nh.ests2_100 <- pool(nh.fits2_100)
+
+nh.fits3_100 <- with(nh.imps3_100, lm(bmi ~ age + hyp + chl))
+nh.ests3_100 <- pool(nh.fits3_100)
+
+nh.fits4_100 <- with(nh.imps4_100, lm(bmi ~ age + hyp + chl))
+nh.ests4_100 <- pool(nh.fits4_100)
+
+nh.fits5_100 <- with(nh.imps5_100, lm(bmi ~ age + hyp + chl))
+nh.ests5_100 <- pool(nh.fits5_100)
+
+nh.fits6_100 <- with(nh.imps6_100, lm(bmi ~ age + hyp + chl))
+nh.ests6_100 <- pool(nh.fits6_100)
+```
+
+```{r}
+# Compare results regarding standard error and confidence intervals
+summary(nh.ests1, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+summary(nh.ests2, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+summary(nh.ests3, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+summary(nh.ests4, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+summary(nh.ests5, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+summary(nh.ests6, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+
+summary(nh.ests1_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+summary(nh.ests2_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+summary(nh.ests3_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+summary(nh.ests4_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+summary(nh.ests5_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+summary(nh.ests6_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+
+# Compare results regarding lambda
+nh.ests1_100
+nh.ests2_100
+nh.ests3_100
+nh.ests4_100
+nh.ests5_100
+nh.ests6_100
+```
+Inspecting the output, we can see that with a bigger $M$, the standard errors and the bounds of the confidence intervals become more stable, and we can be more confident in the results. What's more, when inspecting the lambda column, we notice that the values are somewhat smaller in size as they lie around 0.3, while the previous values often lie around 0.4 (when using $M=5$). This could mean that with a bigger $M$, the proportion in variance due to missing data would be decreased. 
+Therefore, I would prefer $M=100$'s analyses over those with $M=5$.
+
+2. We import the data and for each of the 100 datasets, we impute using 2 different methods: \texttt{norm.nob} (stochastic normal linear regression imputation, which is improper MI as parameter uncertainty is not acknowledged) and \texttt{norm.boot} (the corresponding bootstrap version, which is proper MI and parameter uncertainty is acknowledged.)  
+Firstly, we investigate the \texttt{norm.nob} method and calculate its empirical coverage probability using the following loop.
+```{r}
+# import data
+load("E:/Mae/EDIN/Incomplete Data Analysis/Assignment3/dataex2.Rdata")
+
+# set true value
+b1 <- 3
+```
+
+```{r}
+## impute using norm.nob
+
+#initialize count
+countb1.nob <- 0
+
+# impute, analyze and count
+for (i in 1:100){
+  nob.imp <- mice(dataex2[, , i], m = 20, printFlag = F, 
+                  seed = 1, method = "norm.nob")
+  nob.fit <- with(nob.imp, lm(Y ~ X))
+  nob.est <- pool(nob.fit)
+  nob.confi <- summary(nob.est, conf.in = T)[, c(7,8)]
+  
+  if (b1 >= nob.confi[2,1] & b1 <= nob.confi[2,2])
+    countb1.nob <- countb1.nob + 1
+}
+
+# calculate empirical coverage probability
+countb1.nob/100
+```
+Using stochastic regression imputation, the empirical coverage probability for $\beta_1$ it is 0.88. We now conduct the same analysis using a different method, the corresponding bootstrap based method. 
+```{r}
+## impute using norm.boot
+
+# initialize count
+countb1.boot <- 0
+
+# impute, analyze and count
+for (i in 1:100){
+  boot.imp <- mice(dataex2[, , i], m = 20, printFlag = F, 
+                  seed = 1, method = "norm.boot")
+  boot.fit <- with(boot.imp, lm(Y ~ X))
+  boot.est <- pool(boot.fit)
+  boot.confi <- summary(boot.est, conf.in = T)[, c(7,8)]
+  
+  if (b1 >= boot.confi[2,1] & b1 <= boot.confi[2,2])
+    countb1.boot <- countb1.boot + 1
+}
+
+# calculate empirical coverage probability
+countb1.boot/100
+```
+The empirical coverage probability for $\beta_1$ is significantly increased from 0.88 to 0.95 using the bootstrap method.
+This confirms the idea in the lectures that improper multiple imputation without taking parameter uncertainty into account would result in a smaller total variance and thus lead to narrower confidence intervals, the ones that sometimes cannot even include the true values of parameters. Thus, acknowledging parameter uncertainty is very important in multiple imputation.  
+
+3. Suppose we have a $p$ covariate setting for the linear regression model. 
+\begin{equation*}
+y=\beta_0+\beta_1x_1+\beta_2x_2+...+\beta_px_p
+\end{equation*}
+Also suppose that in step 1, $M=m$ (i.e. the imputation is repeated for $m$ times) and we would obtain $m$ models in step 2. We have $x_1,x_2,...,x_p$ and we wish to compute (predict) the point estimate $\widehat{y}$.  
+   
+If we use the first strategy, we would obtain $m$ sets of coefficient estimates for each model. Computing the predicted values of $\widehat{y}$ in each model would give us
+\begin{align*}
+\widehat{y^{(1)}} &= \widehat{\beta_0^{(1)}}+ \widehat{\beta_1^{(1)}}x_1 + \widehat{\beta_2^{(1)}}x_2 + ... + \widehat{\beta_p^{(1)}}x_p\\
+\widehat{y^{(2)}} &= \widehat{\beta_0^{(2)}}+ \widehat{\beta_1^{(2)}}x_1 + \widehat{\beta_2^{(2)}}x_2 + ... + \widehat{\beta_p^{(2)}}x_p\\
+&...\\
+\widehat{y^{(m)}} &= \widehat{\beta_0^{(m)}}+ \widehat{\beta_1^{(m)}}x_1 + \widehat{\beta_2^{(m)}}x_2 + ... + \widehat{\beta_p^{(m)}}x_p\\
+\end{align*}
+We pool the $m$ estimates according to Rubin's rule for point estimates (averaging the
+predicted values across the imputed datasets) and obtain 
+\begin{align*}
+\widehat{y} &= \frac{1}{m}\sum_{i=1}^{m}\widehat{y^{(i)}}\\
+&=\frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_0^{(i)}}+ \left(\frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_1^{(i)}}\right)x_1 + \left(\frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_2^{(i)}}\right)x_2 + ... + \left(\frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_p^{(i)}}\right)x_p
+\end{align*}  
+  
+If we use the second strategy, we first pool the regression coefficients in m models using Rubin's rule, which would give us
+\begin{align*}
+\widehat{\beta_0} &= \frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_0^{(i)}}\\
+\widehat{\beta_1} &= \frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_1^{(i)}}\\
+\widehat{\beta_2} &= \frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_2^{(i)}}\\
+&...\\
+\widehat{\beta_p} &= \frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_p^{(i)}}\\
+\end{align*}
+then we compute $\widehat{y}$ using the pooled estimated coefficients, which leads to
+\begin{align*}
+\widehat{y} &= \widehat{\beta_0} + \widehat{\beta_1}x_1 + \widehat{\beta_2}x_2 + ... + \widehat{\beta_p}x_p\\
+&= \frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_0^{(i)}}+ \left(\frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_1^{(i)}}\right)x_1 + \left(\frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_2^{(i)}}\right)x_2 + ... + \left(\frac{1}{m}\sum_{i=1}^{m}\widehat{\beta_p^{(i)}}\right)x_p
+\end{align*}
+and we can see that this result is the same as the one obtained using the first strategy. Therefore, the two strategies coincide.
+
+
+4. (a) First, we load the data and inspect the data's dimensions and the missing data patterns. We can see that 568 rows of data are complete, 182 rows have only $x_1$ missing, 182 rows have only $y$ missing, and 68 rows have both $y$ and $x_1$ missing.  
+```{r}
+# load the data
+load("E:/Mae/EDIN/Incomplete Data Analysis/Assignment3/dataex4.Rdata")
+dim(dataex4)
+
+# check the missingness pattern of dataex4
+md_pattern(dataex4)
+```
+
+From the given information, we know that $x_1$ follows a normal distribution, and thus before we may use a normal linear regression model to impute the missing values, we want to inspect the observed data's distribution and see if the normality assumption is roughly met.
+```{r}
+plot_all(dataex4)
+```
+
+Having inspected the data, we will first perform a dry run without any iterations and later change the imputation methods or other default options.
+```{r}
+imp4_0 <- mice(dataex4, maxit = 0)
+imp4_0$method
+imp4_0$predictorMatrix
+imp4_0$visitSequence
+```
+
+Judging by the observed data's distribution, it's not unreasonable to change the imputation method of $x_1$ from default \texttt{pmm} to \texttt{norm}. We can see from above that the distribution of y's value is a little bit skewed, so it's best that we use the default method \texttt{pmm} here.
+```{r}
+# change the imputation method of x1
+meth4_a <- imp4_0$method
+meth4_a["x1"] <- "norm"
+```
+
+Because we are using the "Impute, then transform" method, we only impute the $y$ and $x_1$ variables using $M=50$ and \texttt{seed} = 1 at first. The interaction term is only added in our analysis model. We are now ready to impute.
+```{r}
+# impute
+imp4_1 <- mice(dataex4, method = meth4_a, m = 50, seed = 1, printFlag = F)
+# we can check for convergence and everything seems ok
+plot(imp4_1)
+# check if mice detected any problems
+imp4_1$loggedEvents
+```
+```{r}
+# perform regression and include the interaction variable here
+fits4_1 <- with(imp4_1, lm(y ~ x1 + x2 + x1*x2))
+ests4_1 <- pool(fits4_1)
+
+ests4_1
+summary(ests4_1, conf.int = T)
+```
+The estimate of $\beta_1$, $\beta_2$ and $\beta_3$ are respectively 1.485249, 1.950049 and 0.705826. Their 95% confidence intervals are (1.2925964, 1.6779025), (1.8505648, 2.0495325) and (0.5877716, 0.8238803).  
+As the true values of $\beta_1$, $\beta_2$ and $\beta_3$ are respectively 1, 2 and 1, we can see that for incomplete variables the estimates are not very accurate. The confidence intervals obtained couldn't include the true value. The complete variable $x_2$ however, did obtain an estimate that is quite close to the true value.
+
+(b) Now we will calculate and append the interaction variable to our dataset. 
+```{r}
+# add the interaction variable to our dataset
+dataex4$x1x2 <- dataex4$x1 * dataex4$x2
+
+# check the missingness pattern of dataex4
+md_pattern(dataex4) 
+```
+
+We can see that as $x_2$ is fully obsserved, $x_1x_2$ is only missing where $x_1$ is missing. To use passive imputation, we should first impute the value of $x_1$, then impute the missing values of $x_2$ by specifying a calculation formula in our imputation model. Therefore, we should also make sure this term is imputed at last.  
+Similar as before, we can perform a dry run and modify the imputation methods, sequence and predictor matrix.
+```{r}
+imp42_0 <- mice(dataex4, maxit = 0)
+imp42_0$method
+imp42_0$predictorMatrix
+imp42_0$visitSequence
+```
+
+We can see that the interaction term is already at the end of the sequence, so we only need to change the predictor matrix to ensure that the interaction term is not used to impute other variables, and of course change the imputation method of $x_1$ to "norm" and $x_1x_2$ through the \texttt{I()} operator. Besides, we should not use $x_1$ and $x_2$ to impute $x_1x_2$ again, and to avoid multi-collinearity, we should not use $x_1$ and $x_2$ to impute $y$ if we are already using $x_1x_2$.
+```{r}
+# change the predictor matrix
+predm4_b <- imp42_0$predictorMatrix
+predm4_b[c("x1","x2"),"x1x2"] = 0
+predm4_b[c("y","x1x2"),c("x1","x2")] = 0
+predm4_b
+```
+```{r}
+# change the imputation methods
+meth4_b <- imp42_0$method
+meth4_b["x1"] <- "norm"
+meth4_b["x1x2"] <- "~I(x1*x2)"
+meth4_b
+```
+
+We are now ready to impute.
+```{r}
+# impute
+imp4_2 <- mice(dataex4, method = meth4_b, predictorMatrix = predm4_b,
+               m = 50, seed = 1, printFlag = F)
+# we can check for convergence and everything seems ok
+plot(imp4_2)
+# check if mice detected any problems
+imp4_2$loggedEvents
+```
+```{r}
+# perform regression analysis
+fits4_2 <- with(imp4_2, lm(y ~ x1 + x2 + x1x2))
+ests4_2 <- pool(fits4_2)
+
+ests4_2
+summary(ests4_2, conf.int = T)
+```
+The estimate of $\beta_1$, $\beta_2$ and $\beta_3$ are respectively 0.9714789, 1.5990479 and 0.9392473. Their 95% confidence intervals are (0.6990932, 1.243865), (1.4595307, 1.738565) and (0.7995643, 1.078930).  
+We can see that now we obtain much more accurate estimates of $\beta_1$ and $\beta_3$ but the estimate of $\beta_2$ is not very accurate. However we did notice the confidence interval for $\beta_1$ and $\beta_3$ getting wider and the standard errors bigger.
+
+(c) Now that we have appended to interaction variable to our dataset, to impute it just like another variable in our dataset, we do not need to specify anything for $x_1x_2$ (except that we should still change $x_1$'s  imputation method to "norm").
+```{r}
+# check x1x2's distribution
+plot_all(dataex4)
+
+# modify the imputation method to use default predictive mean matching
+meth4_c <- meth4_b
+meth4_c["x1x2"] <- "pmm"
+meth4_c
+```
+```{r}
+# impute
+imp4_3 <- mice(dataex4, method = meth4_c, m = 50, seed = 1, printFlag = F)
+# we can check for convergence
+plot(imp4_3)
+# check if mice detected any problems
+imp4_3$loggedEvents
+```
+```{r}
+# perform regression analysis
+fits4_3 <- with(imp4_3, lm(y ~ x1 + x2 + x1x2))
+ests4_3 <- pool(fits4_3)
+
+ests4_3
+summary(ests4_3, conf.int = T)
+```
+The estimate of $\beta_1$, $\beta_2$ and $\beta_3$ are respectively 0.9949083, 2.0246018 and 1.0128872. Their 95% confidence intervals are (0.8160048, 1.173812), (1.9425799, 2.106624) and (0.9259658,1.099809).  
+We can see here that this method provided very accurate estimates for all the coefficients. This is probably because more information is provided as we've started to included the interaction variable as a predictor variable for $y$, $x_1$ and $x_2$, not just passively imputed. We can also observe a further decrease in standard errors and an even narrower confidence interval. But we did notice some convergence problem in the chains, and this is possibly due to the collinearity between the variables. 
+
+(d) We can try to view any completed dataset of the "just another variable" method.
+```{r}
+jav.com <- complete(imp4_3,1)
+head(jav.com)
+table(jav.com$x1x2 == jav.com$x1 * jav.com$x2)
+```
+Theoretically speaking, the interaction variable is a product of $x_1$ and $x_2$, so mathematically the \texttt{x1x2} variable should all be equal to multiplying \texttt{x1} by \texttt{x2}. However, as we are treating the interaction variable as just another variable, we can see that the imputed values of x1x2 are often inconsistent with the imputed values of x1 and x2. This is one of the most obvious drawbacks with this method.
+
+5. We start by loading the data and inspecting the data. 
+```{r}
+load("E:/Mae/EDIN/Incomplete Data Analysis/Assignment3/NHANES2.Rdata")
+dim(NHANES2)
+summary(NHANES2)
+```
+
+We have 500 individuals with 12 variables in this dataset. As our model of interest discusses the variables \texttt{wgt}, \texttt{gender}, \texttt{age}, \texttt{hgt} and \texttt{WC}, among these variables we observe missingness in \texttt{hgt} and \texttt{WC}.  
+We can further inspect the missing data patterns.
+```{r}
+md_pattern(NHANES2)
+```
+
+We can see that there are in total 411 rows of data that are complete. Variable \texttt{bili}, \texttt{HDL} and \texttt{chol} are often missing together, while \texttt{hypten} and \texttt{SBP}'s missingness often appear together.
+We can also visualise what the distribution of observed values in the different variables look like.
+```{r}
+par(mar = c(3, 3, 2, 1), mgp = c(2, 0.6, 0))
+plot_all(NHANES2)
+```
+
+Having inspected our data, we first start by a dry run of \texttt{mice()}.
+```{r}
+imp5_0 <- mice(data = NHANES2, maxit = 0)
+imp5_0$method
+imp5_0$predictorMatrix
+```
+
+We can see that it's not entirely unreasonable to use a normal distribution for the \texttt{hgt} variable. For other variables the distributions are all a bit skewed, so predictive mean matching is probably the best option for them.
+```{r}
+meth5 <- imp5_0$method
+meth5["hgt"] <- "norm"
+meth5
+```
+
+We do not have any "derived" variables (i.e., variable that can be written as a mathematical function of other variables), so we do not see a need to change the \texttt{predictorMatrix}. Now, using \texttt{M=50}, \texttt{maxit=20}, \texttt{seed=1}, we will start imputing.
+```{r}
+imp5 <- mice(NHANES2, maxit = 20, method = meth5, m = 50, seed = 1, printFlag = FALSE)
+```
+
+We can check for convergence and if mice detected any problems using \texttt{loggedEvents}.
+```{r}
+plot(imp5, layout = c(4, 4))
+imp5$loggedEvents
+```
+
+The chains seem nicely converged and there are no outstanding problems in the imputation process. There's no pattern in the \texttt{educ}'s sd because there is only one missing value in \texttt{educ}. We can inspect if the imputed values agrees with the distributions of the observed values. 
+```{r}
+densityplot(imp5)
+```
+
+As we can see above, most imputed distributions are in line with the observed values' distributions, however there seem to be discrepancies in variables \texttt{hgt}, \texttt{SBP} and \texttt{WC}. We can check \texttt{SBP} conditional on the gender and hypertensive, and check \texttt{WC} conditional on hypertensive. The graph seems to show that hypertensive does explain a proportion of the differences in the \texttt{WC}'s observed and imputed values, and the same is true for gender and hypertensive for \texttt{SBP}'s observed and imputed values.
+```{r}
+densityplot(imp5, ~WC|hypten)
+```
+```{r}
+densityplot(imp5, ~SBP|gender + hypten)
+```
+
+We can also visualise the scatterplot of the imputed and observed values for height and weight conditional on gender.
+```{r}
+xyplot(imp5, hgt ~ wgt | gender, pch = c(1, 20))
+```
+
+```{r}
+require(devtools)
+require(reshape2)
+require(RColorBrewer)
+require(ggplot2)
+source_url("https://gist.githubusercontent.com/NErler/0d00375da460dd33839b98faeee2fdab/raw/c6f537ecf80eddcefd94992ec7926aa57d454536/propplot.R")
+
+propplot(imp5)
+```
+We observe a large discrepancy between the imputed and observed data distributions for the educ variable, but this is because it only has one missing value and thus in all imputed datasets, that one imputed value would take the whole proportion (100%).
+For the hypten variable all seems reasonable.
+
+Having checked that our imputation is successful, we can continue to step 2 to analyze. We fit the regression model of interest and further examine the summary of the regression model in the first imputed dataset.
+```{r}
+fit5 <- with(imp5, lm(wgt ~ gender + age + hgt + WC))
+summary(fit5$analyses[[1]])
+```
+
+To check if the regression model is reasonable, we should check the residuals vs fitted values plot to check the linearity assumption and the Q-Q plot to check the assumption of the normality of error.
+```{r}
+plot(fit5$analyses[[1]]$fitted.values, residuals(fit5$analyses[[1]]),
+xlab = "Fitted values", ylab = "Residuals")
+```
+```{r}
+qqnorm(rstandard(fit5$analyses[[1]]), xlim = c(-4, 4), ylim = c(-6, 6))
+qqline(rstandard(fit5$analyses[[1]]), col = 2)
+```
+
+From the residuals vs fitted values plot, there is no obvious pattern so it is safe to assume that there is a linear relationship and the variance is constant. From the Q-Q plot we can see that all points lie on the 1:1 line with negligible deviation in the tails, therefore the normality assumption appears to be justified in this model.   
+Finally, we can pool the results.
+```{r}
+ests5 <- pool(fit5)
+ests5
+summary.ests5 <- summary(ests5, conf.int = TRUE)
+summary.ests5
+```
+```{r}
+pool.r.squared(ests5, adjusted = TRUE)
+```
+
+From the summary statistics, we can see that except for the \texttt{genderfemale} variable whose P value is 0.098667, which is not very significant, the rest of the coefficients all have very significant P values. We should fit the model without the \texttt{gender} variable and use the Wald test to compare the two models.
+```{r}
+fit.nogender <- with(imp5, lm(wgt ~ age + hgt + WC))
+D1(fit5, fit.nogender)
+```
+
+In this case the Wald test statistic is not very significant, and therefore we could say that \texttt{gender} has no major contribution to this model. We can also test for a variable that has significant P value, e.g. \texttt{hgt}.
+```{r}
+fit.nohgt <- with(imp5, lm(wgt ~ gender + hgt + WC))
+D1(fit5, fit.nohgt)
+```
+We can see that the Wald test statistic is now significant, which shows that we should keep the variable \texttt{hgt} in our model.
+```{r}
+df <- data.frame("Estimate" = summary.ests5[,2], 
+                 "lq" = summary.ests5[,7], "uq" = summary.ests5[,8]
+                 )
+
+rownames(df) <- c("$\\beta_0$", "$\\beta_1$","$\\beta_2$", "$\\beta_3$", "$\\beta_4$")
+colnames(df) <- c("Estimate", "2.5% quantile", "97.5% quantile")
+knitr::kable(df, escape = FALSE, digits = 3,
+caption = "Regression coefficient estimates and corresponding 95% CI")
+```
+The pooled regression coefficients and their corresponding 95% confidence intervals are reported in Table 1. The above analysis has shown that the regression has quite a good fit, with an adjusted R square of 85.64% and three significant coefficients. It indicates that weight does have a linear relationship with age, height and waist circumfence, among which height has the greatest effect (as its absolute coefficient value is the largest), but not necessarily with gender. 
+
+
+
